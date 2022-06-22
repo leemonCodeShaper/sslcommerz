@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\PaymentController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,4 +23,6 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth'])->name('dashboard');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
+
+Route::post('/sslcommerz/success', [PaymentController::class, 'success'])->name('payment.success');
