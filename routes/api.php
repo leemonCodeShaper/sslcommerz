@@ -25,7 +25,10 @@ Route::group(['prefix' => 'sslcommerz', 'middleware' => 'auth:sanctum'], functio
     Route::post('failure', [PaymentController::class, 'failure'])->name('payment.failure');
     Route::post('cancel', [PaymentController::class, 'cancel'])->name('payment.cancel');
     Route::post('ipn', [PaymentController::class, 'ipn'])->name('payment.ipn');
-    Route::post('order', [PaymentController::class, 'order'])->name('payment.order');
+    Route::post('pay', [PaymentController::class, 'pay'])->name('payment.pay');
+    Route::get('refund', [PaymentController::class, 'refund'])->name('payment.refund');
+    Route::get('refund-status', [PaymentController::class, 'refundStatus'])->name('payment.refund.status');
+    Route::get('transaction-query', [PaymentController::class, 'transactionQuery'])->name('payment.transaction.query');
 });
 
 
