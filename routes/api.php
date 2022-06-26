@@ -29,6 +29,7 @@ Route::group(['prefix' => 'sslcommerz', 'middleware' => 'auth:sanctum'], functio
     Route::get('refund', [PaymentController::class, 'refund'])->name('payment.refund');
     Route::get('refund-status', [PaymentController::class, 'refundStatus'])->name('payment.refund.status');
     Route::get('transaction-query', [PaymentController::class, 'transactionQuery'])->name('payment.transaction.query');
+    Route::get('order-validation', [PaymentController::class, 'orderValidation'])->name('payment.order.validation');
 });
 
 

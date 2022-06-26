@@ -39,8 +39,8 @@ class PayRequest extends FormRequest
             'cusPhone'        => ['required', 'string', 'max:20'],
             // shipping info
             'shippingMethod'  => ['required', 'string', 'max:50', Rule::in(['YES', 'NO', 'Courier'])],
-            // product info
             'numOfItems'      => ['required', 'integer'],
+            // product info
             'productName'     => ['required', 'string', 'max:255'],
             'productCategory' => ['required', 'string', 'max:100'],
             'productProfile'  => ['required', 'string', 'max:100'],

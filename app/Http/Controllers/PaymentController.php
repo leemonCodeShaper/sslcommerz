@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\OrderValidationRequest;
 use App\Http\Requests\PayRequest;
 use App\Http\Requests\RefundRequest;
 use App\Http\Requests\TransactionQueryRequest;
+use App\Http\Resources\PayResource;
 use App\Http\Resources\RefudnResource;
 use App\Http\Resources\RefundStatusResource;
 use App\Http\Resources\TransactionQueryResource;
@@ -21,7 +23,7 @@ class PaymentController extends Controller
      */
     public function success(Request $request)
     {
-        $validate = SSLCommerz::validate_payment($request);
+        $validate = $this->orderValidation(new OrderValidationRequest($request->all()));
         if ($validate) {
             $bankID = $request->bank_tran_id;   //  KEEP THIS bank_tran_id FOR REFUNDING ISSUE
 
@@ -62,15 +64,41 @@ class PaymentController extends Controller
         $sandbox_api = env('SANDBOX_PAY_API_URL');
         $live_api = env('LIVE_PAY_API_URL');
 
-        $response = Http::get($sandbox_api, [
-            'bank_tran_id'   => $request->bankTranId,
-            'store_id'       => env('SSLC_STORE_ID'),
-            'store_passwd'   => env('SSLC_STORE_PASSWORD'),
-            'refund_amount'  => $request->refundAmount,
-            'refund_remarks' => $request->refundRemarks,
-        ]);
+        $data = [
+            'store_id'     => env('SSLC_STORE_ID'),
+            'store_passwd' => env('SSLC_STORE_PASSWORD'),
+            'total_amount' => $request->totalAmount,
+            'currency'     => $request->currency,
+            'tran_id'      => time() . rand(),
+            'success_url'  => route(env('SSLC_ROUTE_SUCCESS')),
+            'fail_url'     => route(env('SSLC_ROUTE_FAILURE')),
+            'cancel_url'   => route(env('SSLC_ROUTE_CANCEL')),
 
+            'emi_option' => $request->emiOption,
 
+            'cus_name'     => $request->cusName,
+            'cus_email'    => $request->cusEmail,
+            'cus_add1'     => $request->cusAddress,
+            'cus_city'     => $request->cusCity,
+            "cus_postcode" => $request->cusPostCode,
+            'cus_country'  => $request->cusCountry,
+            'cus_phone'    => $request->cusPhone,
+
+            'shipping_method' => $request->shippingMethod,
+            'num_of_item'     => $request->numOfItems,
+
+            'product_name'     => $request->productName,
+            'product_category' => $request->productCategory,
+            'product_profile'  => $request->productProfile,
+        ];
+        $response = Http::asForm()->post($sandbox_api, $data);
+
+        if ($response->successful()) {
+            $data = json_decode($response);
+            return new PayResource($data);
+        } else {
+            return response()->json(['error' => $response->body()]);
+        }
     }
 
     /**
@@ -123,12 +151,12 @@ class PaymentController extends Controller
         $live = env('LIVE_TRANSACTION_QUERY_API_URL');
 
         $response = Http::get($sandbox_api, [
-            'tran_id' => $request->tranId,
-            'store_id'      => env('SSLC_STORE_ID'),
-            'store_passwd'  => env('SSLC_STORE_PASSWORD'),
+            'tran_id'      => $request->tranId,
+            'store_id'     => env('SSLC_STORE_ID'),
+            'store_passwd' => env('SSLC_STORE_PASSWORD'),
         ]);
 
-        if($response->successful()) {
+        if ($response->successful()) {
             $data = json_decode($response);
             return new TransactionQueryResource($data);
         } else {
@@ -146,79 +174,32 @@ class PaymentController extends Controller
 
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function orderValidation(OrderValidationRequest $request)
     {
-        //
-    }
+        $sandbox_api = env('SANDBOX_ORDER_VALIDATION_API_URL');
+        $live_api = env('LIVE_ORDER_VALIDATION_API_URL');
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
+        $response = Http::get($sandbox_api, [
+            'val_id'       => $request->val_id,
+            'store_id'     => env('SSLC_STORE_ID'),
+            'store_passwd' => env('SSLC_STORE_PASSWORD'),
+        ]);
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        if ($response->successful()) {
+            $data = json_decode($response);
 
-    /**
-     * Display the specified resource.
-     *
-     * @param \App\Models\Payment $payment
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Payment $payment)
-    {
-        //
-    }
+            // status validation
+            if ($data->status == 'VALID' || $data->status == 'VALIDATED') {
+                // transaction id validation with database for extra security
+                // amount validation with database for extra security
+                // currency validation with database for extra security
+                // currency_amount with database for extra security
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param \App\Models\Payment $payment
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Payment $payment)
-    {
-        //
-    }
+                return true;
+            }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param \App\Models\Payment $payment
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Payment $payment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param \App\Models\Payment $payment
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Payment $payment)
-    {
-        //
+        } else {
+            return response()->json(['error' => $response->body()]);
+        }
     }
 }
